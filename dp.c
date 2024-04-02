@@ -11,7 +11,9 @@ void init() {
     /* seed the random number generator */
     srandom((unsigned)time(NULL));
 
-
+    for (int i = 0; i < MAX_LENGTH; i++) {
+        rand_numbers[i] = random();
+    }
 }
 
 
@@ -67,9 +69,13 @@ void *philosopher(void *param)
     while (exec < 5) //Only cycle 5 times
     {
         // think
-        pickup_chopsticks(i);
+        pickup_chopsticks(*i);
         // eat
-        return_chopsticks(i);
+        return_chopsticks(*i);
         exec++;
     }
+}
+
+int main() {
+    return 0;
 }
