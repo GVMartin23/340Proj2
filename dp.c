@@ -1,3 +1,12 @@
+/**
+ * Author: Garrett Martin, Sammy Beers
+ * Course: COMP 340, Operating Systems
+ * Date: 2 April 2024
+ * Description: This file implements the functionality
+ *              For Program 1, Task 1
+ * Compile with: gcc -o dp dp.c dp.h
+ * Run with: ./dp
+*/
 #include "dp.h"
 #include <sys/time.h>
 
@@ -77,5 +86,6 @@ void *philosopher(void *param)
 }
 
 int main() {
+    //Make threads and do the stuff
     return 0;
 }
