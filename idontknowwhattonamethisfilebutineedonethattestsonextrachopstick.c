@@ -3,9 +3,9 @@
  * Course: COMP 340, Operating Systems
  * Date: 2 April 2024
  * Description: This file implements the functionality
- *              For Program 1, Task 1
- * Compile with: gcc -o dp dp.c dp.h
- * Run with: ./dp
+ *              For Program 1, Task 2
+ * Compile with: gcc -o dpp1 [nameoffile].c dpp1.h
+ * Run with: ./dpp1
  */
 #include "dpp1.h"
 #include <stdio.h>
