@@ -9,11 +9,16 @@
 */
 #include "dp.h"
 #include <sys/time.h>
+#include <stdio.h>
 
 // init
 // generate random numbers
 
 void init() {
+    //Init mutexes
+    pthread_mutex_init(&mutex_rand, NULL);
+    pthread_mutex_init(&mutex_lock, NULL);
+
     //Init position index
     rand_position = 0;
 
@@ -21,7 +26,12 @@ void init() {
     srandom((unsigned)time(NULL));
 
     for (int i = 0; i < MAX_LENGTH; i++) {
-        rand_numbers[i] = random();
+        rand_numbers[i] = random() % 5;
+    }
+
+    //Init semaphores
+    for (int i = 0; i < NUMBER; i++) {
+        sem_init(&sem_vars[i], 0, 1);
     }
 }
 
@@ -43,49 +53,68 @@ void test(int i)
         state[(i + 1) % NUMBER] != EATING)            // RIGHT
     {
         state[i] = EATING;
-        //TODO: IDK how to signal
+        sem_post(&sem_vars[i]);
     }
 }
 
 void pickup_chopsticks(int i)
 {
+    sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
-    // TODO: needs work
     state[i] = HUNGRY;
-    //TODO: IDK signal
+    test(i);
     pthread_mutex_unlock(&mutex_lock);
+    sem_post(&sem_vars[i]);
 }
 
 void return_chopsticks(int i)
 {
+    sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
     state[i] = THINKING;
     test((i + NUMBER - 1) % NUMBER); // test LEFT
     test((i + 1) % NUMBER);          // test RIGHT
-    //TODO: IDK signal
     pthread_mutex_unlock(&mutex_lock);
+    sem_post(&sem_vars[i]);
 }
 
 void think() {
-
+    sleep(get_next_number());
 }
 
-void *philosopher(void *param)
+void eat() {
+    sleep(get_next_number());
+}
+
+void* philosopher(void *param)
 {
     int *i = (int *)param;
 
     int exec = 0;
     while (exec < 5) //Only cycle 5 times
     {
-        // think
+        think();
+        printf("Stopped Thinking %d as professor %d", exec+1, *i);
         pickup_chopsticks(*i);
-        // eat
+        printf("Eating %d as professor %d", exec+1, *i);
+        eat();
         return_chopsticks(*i);
         exec++;
     }
 }
 
 int main() {
+    init();
     //Make threads and do the stuff
+    pthread_t tid[NUMBER];
+
+    for(int i = 0; i < NUMBER; i++) {
+        pthread_create(&tid[i], NULL, philosopher, &i);
+    }
+
+    for(int i = 0; i < NUMBER; i++) {
+        pthread_join(tid[i], NULL);
+    }
+
     return 0;
 }
