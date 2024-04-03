@@ -13,7 +13,7 @@
 // init
 // generate random numbers
 
-void init(char* filename)
+void init(char *filename)
 {
     // Init mutexes
     pthread_mutex_init(&mutex_rand, NULL);
@@ -59,14 +59,20 @@ void test(int i)
     }
 }
 
-void pickup_chopsticks(int i)
+int pickup_chopsticks(int i)
 {
+    int success = 0;
     sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
     state[i] = HUNGRY;
     test(i);
+    if (state[i] == EATING)
+    {
+        success = 1;
+    }
     pthread_mutex_unlock(&mutex_lock);
     sem_post(&sem_vars[i]);
+    return success;
 }
 
 void return_chopsticks(int i)
@@ -98,10 +104,12 @@ void *philosopher(void *param)
     while (exec < 5) // Only cycle 5 times
     {
         think();
-        pickup_chopsticks(*i);
-        eat();
-        return_chopsticks(*i);
-        exec++;
+        if (pickup_chopsticks(*i))
+        {
+            eat();
+            return_chopsticks(*i);
+            exec++;
+        }
     }
     printf("Professor %d is done eating\n", *i);
 }

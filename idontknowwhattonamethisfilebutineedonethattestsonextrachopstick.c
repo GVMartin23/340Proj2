@@ -13,7 +13,7 @@
 // init
 // generate random numbers
 
-void init(char* filename)
+void init(char *filename)
 {
     // Init mutexes
     pthread_mutex_init(&mutex_rand, NULL);
@@ -63,11 +63,10 @@ void test(int i)
         sem_post(&sem_vars[i]);
     }
     else if (state[i] == HUNGRY &&
-        (state[(i + NUMBER - 1) % NUMBER] != EATING &&
-        middleAvailable) ||
-        (state[(i + 1) % NUMBER] != EATING &&
-        middleAvailable)
-        )
+                 (state[(i + NUMBER - 1) % NUMBER] != EATING &&
+                  middleAvailable) ||
+             (state[(i + 1) % NUMBER] != EATING &&
+              middleAvailable))
     {
         state[i] = EATING;
         sem_post(&sem_vars[i]);
@@ -76,14 +75,20 @@ void test(int i)
     pthread_mutex_unlock(&middle_chop);
 }
 
-void pickup_chopsticks(int i)
+int pickup_chopsticks(int i)
 {
+    int success = 0;
     sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
     state[i] = HUNGRY;
     test(i);
+    if (state[i] == EATING)
+    {
+        success = 1;
+    }
     pthread_mutex_unlock(&mutex_lock);
     sem_post(&sem_vars[i]);
+    return success;
 }
 
 void return_chopsticks(int i)
@@ -94,8 +99,10 @@ void return_chopsticks(int i)
     pthread_mutex_unlock(&middle_chop);
     pthread_mutex_lock(&mutex_lock);
     state[i] = THINKING;
-    for (int j = 0; j < NUMBER; j++) {
-        if (j != i) test(j);
+    for (int j = 0; j < NUMBER; j++)
+    {
+        if (j != i)
+            test(j);
     }
     pthread_mutex_unlock(&mutex_lock);
     sem_post(&sem_vars[i]);
@@ -119,10 +126,12 @@ void *philosopher(void *param)
     while (exec < 5) // Only cycle 5 times
     {
         think();
-        pickup_chopsticks(*i);
-        eat();
-        return_chopsticks(*i);
-        exec++;
+        if (pickup_chopsticks(*i))
+        {
+            eat();
+            return_chopsticks(*i);
+            exec++;
+        }
     }
     printf("Professor %d is done eating\n", *i);
 }

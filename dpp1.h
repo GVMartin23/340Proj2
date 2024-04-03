@@ -41,7 +41,7 @@ pthread_mutex_t     middle_chop;
 void *philosopher(void *param);
 
 //function for the philosopher to pickup the chopsticks
-void pickup_chopsticks(int number);
+int pickup_chopsticks(int number);
 
 //function for the philosopher to return the chopsticks
 void return_chopsticks(int number);
