@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-
 struct timeval before, after;
 
 // init
@@ -62,20 +61,27 @@ void test(int i)
     }
 }
 
-int pickup_chopsticks(int i)
+void pickup_chopsticks(int i)
 {
-    int success = 0;
     sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
     state[i] = HUNGRY;
     test(i);
+    // Check if successfull in eating
     if (state[i] == EATING)
     {
-        success = 1;
+        // Successfully ate, release lock and continue
+        pthread_mutex_unlock(&mutex_lock);
     }
-    pthread_mutex_unlock(&mutex_lock);
+    else
+    {
+        // Release lock and wait until another philospher tests
+        pthread_mutex_unlock(&mutex_lock);
+        sem_wait(&sem_vars[i]);
+        // Will be released once another philosopher puts down chopsticks and you eat
+    }
+
     sem_post(&sem_vars[i]);
-    return success;
 }
 
 void return_chopsticks(int i)
@@ -107,21 +113,16 @@ void *philosopher(void *param)
     double waitTime;
     while (exec < 5) // Only cycle 5 times
     {
-        gettimeofday(&before, NULL);
         think();
-        if (pickup_chopsticks(*i))
-        {
-            gettimeofday(&after, NULL);
-            waitTime = ((after.tv_usec - (double)before.tv_usec) / 1000) +
-                   ((after.tv_sec - (double)before.tv_sec) * 1000);
-            printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
-            eat();
-            return_chopsticks(*i);
-            sem_post(&sem_vars[*i]);
-            exec++;
-        } else {
-            sem_wait(&sem_vars[*i]);
-        }
+        gettimeofday(&before, NULL);
+        pickup_chopsticks(*i);
+        gettimeofday(&after, NULL);
+        waitTime = ((after.tv_usec - before.tv_usec) / 1000.0) +
+                   ((after.tv_sec - before.tv_sec) * 1000.0);
+        printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
+        eat();
+        return_chopsticks(*i);
+        exec++;
     }
     printf("Professor %d is done eating\n", *i);
 }
