@@ -13,9 +13,9 @@
 
 
 struct timeval before, after;
+
 // init
 // generate random numbers
-
 void init(char *filename)
 {
     // Init mutexes
@@ -111,13 +111,15 @@ void *philosopher(void *param)
         think();
         if (pickup_chopsticks(*i))
         {
-            eat();
             gettimeofday(&after, NULL);
-            waitTime = (double)(after.tv_usec - before.tv_usec) / 1000 +
-                   (double)(after.tv_sec - before.tv_sec) * 1000;
+            waitTime = ((after.tv_usec - (double)before.tv_usec) / 1000) +
+                   ((after.tv_sec - (double)before.tv_sec) * 1000);
             printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
+            eat();
             return_chopsticks(*i);
             exec++;
+        } else {
+            sem_wait(&sem_vars[*i]);
         }
     }
     printf("Professor %d is done eating\n", *i);
