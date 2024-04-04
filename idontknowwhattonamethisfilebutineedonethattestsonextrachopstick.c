@@ -9,6 +9,9 @@
  */
 #include "dpp1.h"
 #include <stdio.h>
+#include <sys/time.h>
+
+struct timeval before, after;
 
 // init
 // generate random numbers
@@ -123,12 +126,18 @@ void *philosopher(void *param)
     int *i = (int *)param;
 
     int exec = 0;
+    double waitTime;
     while (exec < 5) // Only cycle 5 times
     {
+        gettimeofday(&before, NULL);
         think();
         if (pickup_chopsticks(*i))
         {
             eat();
+            gettimeofday(&after, NULL);
+            waitTime = (double)(after.tv_usec - before.tv_usec) / 1000 +
+                   (double)(after.tv_sec - before.tv_sec) * 1000;
+            printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
             return_chopsticks(*i);
             exec++;
         }
