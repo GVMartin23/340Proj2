@@ -117,7 +117,7 @@ void *philosopher(void *param)
             printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
             eat();
             return_chopsticks(*i);
-            sem_signal(&sem_vars[*i]);
+            sem_post(&sem_vars[*i]);
             exec++;
         } else {
             sem_wait(&sem_vars[*i]);
