@@ -58,22 +58,20 @@ int get_next_number()
 void test(int i)
 {
     pthread_mutex_lock(&middle_chop);
-    if (state[i] == HUNGRY &&                         // want to compete
-        state[(i + NUMBER - 1) % NUMBER] != EATING && // LEFT
-        state[(i + 1) % NUMBER] != EATING)            // RIGHT
+    if (state[i] == HUNGRY && middleAvailable &&                        // want to compete
+        ((state[(i + NUMBER - 1) % NUMBER] != EATING) || // LEFT
+        (state[(i + 1) % NUMBER] != EATING))  )      // RIGHT
     {
         state[i] = EATING;
+        middleAvailable = false;
         sem_post(&sem_vars[i]);
     }
     else if (state[i] == HUNGRY &&
-                 (state[(i + NUMBER - 1) % NUMBER] != EATING &&
-                  middleAvailable) ||
-             (state[(i + 1) % NUMBER] != EATING &&
-              middleAvailable))
+            state[(i + NUMBER - 1) % NUMBER] != EATING &&
+            state[(i + 1) % NUMBER] != EATING )
     {
         state[i] = EATING;
         sem_post(&sem_vars[i]);
-        middleAvailable = false;
     }
     pthread_mutex_unlock(&middle_chop);
 }
@@ -129,17 +127,20 @@ void *philosopher(void *param)
     double waitTime;
     while (exec < 5) // Only cycle 5 times
     {
-        gettimeofday(&before, NULL);
         think();
+        gettimeofday(&before, NULL);
         if (pickup_chopsticks(*i))
         {
-            eat();
             gettimeofday(&after, NULL);
-            waitTime = (double)(after.tv_usec - before.tv_usec) / 1000 +
-                   (double)(after.tv_sec - before.tv_sec) * 1000;
+            waitTime = ((after.tv_usec - (double)before.tv_usec) / 1000) +
+                   ((after.tv_sec - (double)before.tv_sec) * 1000);
             printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
+            eat();
             return_chopsticks(*i);
+            sem_post(&sem_vars[*i]);
             exec++;
+        } else {
+            sem_wait(&sem_vars[*i]);
         }
     }
     printf("Professor %d is done eating\n", *i);
