@@ -4,10 +4,10 @@
  * Date: 2 April 2024
  * Description: This file implements the functionality
  *              For Program 1, Task 2
- * Compile with: gcc -o dpp1 [nameoffile].c dpp1.h
- * Run with: ./dpp1
+ * Compile with: gcc -o task2 task2.c task2.h
+ * Run with: ./task2
  */
-#include "dpp1.h"
+#include "task2.h"
 #include <stdio.h>
 #include <sys/time.h>
 
@@ -58,17 +58,17 @@ int get_next_number()
 void test(int i)
 {
     pthread_mutex_lock(&middle_chop);
-    if (state[i] == HUNGRY && middleAvailable &&                        // want to compete
+    if (state[i] == HUNGRY && middleAvailable &&         // want to compete
         ((state[(i + NUMBER - 1) % NUMBER] != EATING) || // LEFT
-        (state[(i + 1) % NUMBER] != EATING))  )      // RIGHT
+         (state[(i + 1) % NUMBER] != EATING)))           // RIGHT
     {
         state[i] = EATING;
         middleAvailable = false;
         sem_post(&sem_vars[i]);
     }
     else if (state[i] == HUNGRY &&
-            state[(i + NUMBER - 1) % NUMBER] != EATING &&
-            state[(i + 1) % NUMBER] != EATING )
+             state[(i + NUMBER - 1) % NUMBER] != EATING &&
+             state[(i + 1) % NUMBER] != EATING)
     {
         state[i] = EATING;
         sem_post(&sem_vars[i]);
@@ -82,11 +82,22 @@ int pickup_chopsticks(int i)
     sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
     state[i] = HUNGRY;
-    test(i);
-    if (state[i] == EATING)
+
+    // Continually try and eat untill succesfull
+    while (state[i] == HUNGRY)
     {
-        success = 1;
+        test(i);
+
+        // Check if failed
+        if (state[i] == HUNGRY)
+        {
+            // Giveup lock until signalled then take it back
+            pthread_mutex_unlock(&mutex_lock);
+            sem_wait(&sem_vars[i]);
+            pthread_mutex_lock(&mutex_lock);
+        }
     }
+
     pthread_mutex_unlock(&mutex_lock);
     sem_post(&sem_vars[i]);
     return success;
@@ -129,19 +140,14 @@ void *philosopher(void *param)
     {
         think();
         gettimeofday(&before, NULL);
-        if (pickup_chopsticks(*i))
-        {
-            gettimeofday(&after, NULL);
-            waitTime = ((after.tv_usec - (double)before.tv_usec) / 1000) +
-                   ((after.tv_sec - (double)before.tv_sec) * 1000);
-            printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
-            eat();
-            return_chopsticks(*i);
-            sem_post(&sem_vars[*i]);
-            exec++;
-        } else {
-            sem_wait(&sem_vars[*i]);
-        }
+        pickup_chopsticks(*i);
+        gettimeofday(&after, NULL);
+        waitTime = ((after.tv_usec - before.tv_usec) / 1000.0) +
+                   ((after.tv_sec - before.tv_sec) * 1000.0);
+        printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
+        eat();
+        return_chopsticks(*i);
+        exec++;
     }
     printf("Professor %d is done eating\n", *i);
 }

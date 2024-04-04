@@ -66,21 +66,23 @@ void pickup_chopsticks(int i)
     sem_wait(&sem_vars[i]);
     pthread_mutex_lock(&mutex_lock);
     state[i] = HUNGRY;
-    test(i);
-    // Check if successfull in eating
-    if (state[i] == EATING)
+
+    // Continually try and eat untill succesfull
+    while (state[i] == HUNGRY)
     {
-        // Successfully ate, release lock and continue
-        pthread_mutex_unlock(&mutex_lock);
-    }
-    else
-    {
-        // Release lock and wait until another philospher tests
-        pthread_mutex_unlock(&mutex_lock);
-        sem_wait(&sem_vars[i]);
-        // Will be released once another philosopher puts down chopsticks and you eat
+        test(i);
+
+        // Check if failed
+        if (state[i] == HUNGRY)
+        {
+            // Giveup lock until signalled then take it back
+            pthread_mutex_unlock(&mutex_lock);
+            sem_wait(&sem_vars[i]);
+            pthread_mutex_lock(&mutex_lock);
+        }
     }
 
+    pthread_mutex_unlock(&mutex_lock);
     sem_post(&sem_vars[i]);
 }
 
