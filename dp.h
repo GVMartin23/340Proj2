@@ -22,6 +22,11 @@ int get_next_number();
 //mutex lock to use in order to protect the order of random numbers
 pthread_mutex_t mutex_rand;
 
+//mutex lock for timing
+pthread_mutex_t mutex_time;
+double totalEatingTime;
+double maxEatingTime;
+
 //position of next random number 
 int rand_position;
 
