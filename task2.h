@@ -9,7 +9,7 @@
 #include <stdbool.h>
 
 // the number of philosophers
-#define NUMBER 		5
+#define NUMBER 5
 
 // the maximum number of random numbers
 #define MAX_LENGTH 500
@@ -22,6 +22,11 @@ int get_next_number();
 
 //mutex lock to use in order to protect the order of random numbers
 pthread_mutex_t mutex_rand;
+
+//mutex lock for timing
+pthread_mutex_t mutex_time;
+double totalEatingTime;
+double maxEatingTime;
 
 //position of next random number 
 int rand_position;

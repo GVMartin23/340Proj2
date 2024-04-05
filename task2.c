@@ -21,6 +21,8 @@ void init(char *filename)
     // Init mutexes
     pthread_mutex_init(&mutex_rand, NULL);
     pthread_mutex_init(&middle_chop, NULL);
+    pthread_mutex_init(&mutex_lock, NULL);
+    pthread_mutex_init(&mutex_time, NULL);
 
     // Init position index
     rand_position = 0;
@@ -37,6 +39,12 @@ void init(char *filename)
     }
 
     fclose(myFile);
+
+    // Init timing vars
+    pthread_mutex_lock(&mutex_time);
+    totalEatingTime = 0;
+    maxEatingTime = -1;
+    pthread_mutex_unlock(&mutex_time);
 
     // Init semaphores
     for (int i = 0; i < NUMBER; i++)
@@ -144,12 +152,21 @@ void *philosopher(void *param)
         gettimeofday(&after, NULL);
         waitTime = ((after.tv_usec - before.tv_usec) / 1000.0) +
                    ((after.tv_sec - before.tv_sec) * 1000.0);
-        printf("Philosopher %d waited %.5f milliseconds before eating.\n", *i, waitTime);
+
+        // Timing stuff
+        pthread_mutex_lock(&mutex_time);
+        totalEatingTime += waitTime;
+        if (waitTime > maxEatingTime)
+        {
+            maxEatingTime = waitTime;
+        }
+        pthread_mutex_unlock(&mutex_time);
+
         eat();
         return_chopsticks(*i);
         exec++;
     }
-    printf("Professor %d is done eating\n", *i);
+    printf("Philosopher %d is done eating\n", *i);
 }
 
 int main()
@@ -159,22 +176,33 @@ int main()
     pthread_t tid[NUMBER];
     int *nums[NUMBER];
 
-    for (int i = 0; i < NUMBER; i++)
+    int exec = 0;
+    while (exec < 5) // Runs 5 times for timing
     {
-        nums[i] = (int *)malloc(sizeof(int));
-        *nums[i] = i;
-        pthread_create(&tid[i], NULL, philosopher, nums[i]);
+        for (int i = 0; i < NUMBER; i++)
+        {
+            nums[i] = (int *)malloc(sizeof(int));
+            *nums[i] = i;
+            pthread_create(&tid[i], NULL, philosopher, nums[i]);
+        }
+
+        for (int i = 0; i < NUMBER; i++)
+        {
+            pthread_join(tid[i], NULL);
+        }
+
+        for (int i = 0; i < NUMBER; i++)
+        {
+            free(nums[i]);
+        }
+
+        exec++;
     }
 
-    for (int i = 0; i < NUMBER; i++)
-    {
-        pthread_join(tid[i], NULL);
-    }
-
-    for (int i = 0; i < NUMBER; i++)
-    {
-        free(nums[i]);
-    }
+    pthread_mutex_lock(&mutex_time);
+    printf("Avg eating time %f\n", totalEatingTime / (NUMBER * 5.0 * 5));
+    printf("Max eating time %f\n", maxEatingTime);
+    pthread_mutex_unlock(&mutex_time);
 
     return 0;
 }

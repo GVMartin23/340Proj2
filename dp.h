@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 // the number of philosophers
-#define NUMBER 		5
+#define NUMBER 5
 
 // the maximum number of random numbers
 #define MAX_LENGTH 500
